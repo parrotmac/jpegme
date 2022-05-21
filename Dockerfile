@@ -19,6 +19,9 @@ COPY main.js webpack.config.js .babelrc ./
 RUN npx webpack
 
 FROM alpine:3.15.4
+ARG PORT=5000
+ENV PORT=$PORT
+EXPOSE $PORT
 
 WORKDIR /app
 
