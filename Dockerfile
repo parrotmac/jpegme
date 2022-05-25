@@ -2,7 +2,7 @@ FROM golang:1.18.2-alpine3.15 as server-builder
 
 WORKDIR /app
 
-COPY go.mod main.go ./
+COPY go.mod go.sum main.go cli.go ./
 
 RUN go build -o bin/jpegme .
 
