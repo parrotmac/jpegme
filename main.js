@@ -1,10 +1,33 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import ReactDOM from 'react-dom/client';
 
 function App() {
     const [loading, setLoading] = useState(false);
     const [quality, setQuality] = useState(10);
+    const [iterations, setIterations] = useState(1);
     const [imageUrl, setImageUrl] = useState("");
+    const [b64Image, setB64Image] = useState("");
+    const [imgData, setImgData] = useState(new ArrayBuffer(0));
+
+    useEffect(() => {
+        fetch('/api/convert', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                quality: parseInt(quality),
+                iterations: parseInt(iterations),
+                image: imgData,
+            }),
+        }).then((body) => {
+            body.text().then(data =>
+            {
+                console.log(data);
+                setB64Image(`data:image/jpeg;base64,${data}`)
+            })
+        })
+    }, [imgData, quality])
 
     return (
         <div className="row justify-content-center">
@@ -22,6 +45,7 @@ function App() {
                                 value={imageUrl}
                                 onChange={(e) => {
                                     setLoading(true);
+                                    setB64Image("");
                                     const url = e?.target?.value;
                                     try {
                                         new URL(url);
@@ -30,6 +54,18 @@ function App() {
                                     }
                                 }}/>
                         </div>
+                        <span>- or -</span>
+                        <input type={'file'} accept={'image/*'} onChange={(e) => {
+                            if (e.target.files.length < 1) {
+                                return;
+                            }
+                            const fr = new FileReader();
+                            fr.onload = function () {
+                                setImgData(fr.result);
+                            };
+                            fr.readAsDataURL(e.target.files[0]);
+                        }} />
+                        <hr />
                         <div className="mb-3">
                             <span className="input-group" id="image-quality-label">Quality</span>
                             <input type={'range'}
@@ -42,6 +78,18 @@ function App() {
                                        setQuality(e?.target?.value || 1)
                                    }}/>
                         </div>
+                        <div className="mb-3">
+                            <span className="input-group" id="encode-iterations-label">Iterations</span>
+                            <input type={'range'}
+                                   min={'1'}
+                                   max={'20'}
+                                   value={iterations}
+                                   aria-describedby="encode-iterations-label"
+                                   onChange={(e) => {
+                                       setLoading(true);
+                                       setIterations(e?.target?.value || 1)
+                                   }}/>
+                        </div>
                         <p
                             style={{
                                 display: loading ? "block" : "none",
@@ -52,7 +100,10 @@ function App() {
                                 display: loading ? "none" : "block",
                             }}
                             alt={'Some Distorted Image ¯\\_(ツ)_/¯'}
-                            src={`/api/convert?quality=${quality}&image_url=${encodeURIComponent(imageUrl || '')}`}
+                            src={
+                                (b64Image && b64Image.length > 0) ? b64Image :
+                            `/api/convert?quality=${quality}&iterations=${iterations}&image_url=${encodeURIComponent(imageUrl || '')}`
+                        }
                             onLoad={() => setLoading(false)}
                         />
                     </div>
